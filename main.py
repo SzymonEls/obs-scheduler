@@ -12,7 +12,7 @@ cl = obs.ReqClient(host=os.getenv("HOST"), port=os.getenv("PORT"), password=os.g
 
 #variables
 licznik = 0
-videos = []
+videos = [] #to do: save queue in file and restore it after restarting program
 video_types = ('.mp4', '.avi', '.mov', '.mkv')
 current_directory = os.path.dirname(os.path.abspath(__file__))
 delete_source = ""
