@@ -9,7 +9,7 @@ load_dotenv(override=True)
 
 # connection
 cl = obs.ReqClient(host=os.getenv("HOST"), port=os.getenv("PORT"), password=os.getenv("PASSWORD"), timeout=3) #print info about connection
-
+print(dir(cl))
 #variables
 licznik = 0
 videos = [] #to do: save queue in file and restore it after restarting program
@@ -55,6 +55,12 @@ def play_video(video_file_path):
         inputSettings={"local_file": video_file_path, "is_local_file": True, "clear_on_media_end": False},
         sceneItemEnabled=True,
     )
+
+    time.sleep(3)
+    # cl.pause_media_input(input_name=source_name)
+    cl.send("PauseMediaInput", {
+        "inputName": source_name
+    })
     
     if delete_source != "":
         cl.remove_input(name=delete_source)
