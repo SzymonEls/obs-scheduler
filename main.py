@@ -9,10 +9,14 @@ load_dotenv(override=True)
 
 # connection
 cl = obs.ReqClient(host=os.getenv("HOST"), port=os.getenv("PORT"), password=os.getenv("PASSWORD"), timeout=3) #print info about connection
-print(dir(cl))
+# print(dir(cl))
 #variables
 licznik = 0
 videos = [] #to do: save queue in file and restore it after restarting program
+now_playing = ""
+paused = False
+
+
 video_types = ('.mp4', '.avi', '.mov', '.mkv')
 current_directory = os.path.dirname(os.path.abspath(__file__))
 delete_source = ""
@@ -39,14 +43,20 @@ def get_video_files(): #to do: photos?
 def play_video(video_file_path):
     global licznik
     global delete_source
+    global now_playing
+    global paused
 
     licznik += 1
     scene_name = "videos"
     source_name = scene_name + "_source_" + str(licznik)
+    now_playing = source_name
+    now_playing_label.config(text="Now playing: " + video_file_path)
     video_file_path = current_directory + "/" + video_file_path
     
     #time.sleep(0.1)
     cl.set_current_program_scene(name=scene_name)
+
+    
 
     cl.create_input(
         sceneName=scene_name,
@@ -56,20 +66,20 @@ def play_video(video_file_path):
         sceneItemEnabled=True,
     )
 
-    time.sleep(3)
+    # time.sleep(3)
     # cl.pause_media_input(input_name=source_name)
-    cl.send("PauseMediaInput", {
-        "inputName": source_name
-    })
+    # cl.send(obs.requests.PauseMediaInput(inputName=source_name))
+    
+    # print(cl.send("GetVersion", raw=True))
     
     if delete_source != "":
         cl.remove_input(name=delete_source)
         delete_source = ""
 
-    time.sleep(0.1)
-    response = cl.get_media_input_status(name=source_name)
-    while response.media_state == "OBS_MEDIA_STATE_PLAYING":
-        response = cl.get_media_input_status(name=source_name)
+    # time.sleep(0.1)
+    # response = cl.get_media_input_status(name=source_name)
+    # while response.media_state == "OBS_MEDIA_STATE_PLAYING" or paused:
+    #     response = cl.get_media_input_status(name=source_name)
     delete_source = source_name
 
 def validate_time_format(time_str):
@@ -119,16 +129,36 @@ def update_queue_display():
 
 def check_and_play_scheduled_videos():
     global videos
-    current_time = datetime.now().strftime("%H:%M:%S")
-    for video in videos:
-        if current_time >= video["time"]:
-            print(current_time + " PLAYING: " + video["file"])
-            play_video(video["file"])
-            for video2 in videos[:]:
-                if video2["time"] == video["time"]:
-                    videos.remove(video2)
-            update_queue_display()
-            break
+    global delete_source
+    global now_playing
+
+    ok = False
+
+    if now_playing != "":
+        response = cl.get_media_input_status(name=now_playing)
+        if response.media_state == "OBS_MEDIA_STATE_ENDED": #to do
+            now_playing = ""
+            now_playing_label.config(text="Now playing: ")
+            # print(response.media_state)
+    
+
+    time.sleep(0.1)
+    if delete_source != "" and paused == False:
+        response = cl.get_media_input_status(name=delete_source)
+        if response.media_state != "OBS_MEDIA_STATE_PLAYING":
+            ok = True
+    
+    if ok or (delete_source == "" and paused == False):
+        current_time = datetime.now().strftime("%H:%M:%S")
+        for video in videos:
+            if current_time >= video["time"]:
+                print(current_time + " PLAYING: " + video["file"])
+                play_video(video["file"])
+                for video2 in videos[:]:
+                    if video2["time"] == video["time"]:
+                        videos.remove(video2)
+                update_queue_display()
+                break
 
 def on_closing():
     cl.remove_scene(name="videos")
@@ -145,22 +175,57 @@ def run_scheduled_tasks():
         check_and_play_scheduled_videos()
         time.sleep(0.01)
 
+def pause():
+    global paused
+    global now_playing
+    
+    if paused == False:
+        paused = True
+        if now_playing != "":
+            cl.send("TriggerMediaInputAction", {
+                "inputName": now_playing,
+                "mediaAction": "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PAUSE"
+            })
+        pause_button.config(text="Resume")
+    else:
+        paused = False
+        if now_playing != "":
+            cl.send("TriggerMediaInputAction", {
+                "inputName": now_playing,
+                "mediaAction": "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PLAY"
+            })
+        pause_button.config(text="Pause")
+
 # GUI
 root = tk.Tk()
 root.title("OBS video queue manager")
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
+top = tk.Frame(root)
+top.pack(pady=10)
+
+#now playing
+now_playing_label = tk.Label(top, text="Now playing: ")
+now_playing_label.pack(side="left", padx=10)
+
+#pause
+pause_button = tk.Button(top, text="Pause", command=pause)
+pause_button.pack(side="left", padx=5)
+
+refresh_button = tk.Button(root, text="Refresh video files", command=load_video_list)
+refresh_button.pack(pady=5)
+
 # Video list
 video_listbox = tk.Listbox(root, height=5, width=40)
 video_listbox.pack(pady=5)
 
-# Button for adding videos to queue
-add_button = tk.Button(root, text="Add to queue", command=add_to_queue)
-add_button.pack(pady=5)
-
 # Time input
 time_entry = tk.Entry(root, width=10)
 time_entry.pack(pady=5)
+
+# Button for adding videos to queue
+add_button = tk.Button(root, text="Add to queue", command=add_to_queue)
+add_button.pack(pady=5)
 
 # Queue table
 treeview = ttk.Treeview(root, columns=("Video", "Time"), show="headings")
