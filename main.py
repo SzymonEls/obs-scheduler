@@ -84,7 +84,7 @@ def play_video(video_file_path):
 
 def validate_time_format(time_str):
     try:
-        time.strptime(time_str, "%H:%M:%S")
+        int(time_str)
         return True
     except ValueError:
         return False
@@ -100,7 +100,7 @@ def add_to_queue():
             update_queue_display()
             time_entry.delete(0, tk.END)
         else:
-            messagebox.showwarning("Error", "Please enter the time in format HH:MM:SS.")
+            messagebox.showwarning("Error", "Please enter number.")
     else:
         messagebox.showwarning("Error", "Please select a video from the list and enter the time.")
 
@@ -114,7 +114,7 @@ def edit_time():
             update_queue_display()
             edit_time_entry.delete(0, tk.END)
         else:
-            messagebox.showwarning("Error", "Please enter the time in format HH:MM:SS.")
+            messagebox.showwarning("Error", "Please enter number.")
     else:
         messagebox.showwarning("Error", "Please select a video from the list and enter the time.")
 
@@ -149,16 +149,17 @@ def check_and_play_scheduled_videos():
             ok = True
     
     if ok or (delete_source == "" and paused == False):
+        videos = sorted(videos, key=lambda x: x["time"])
         current_time = datetime.now().strftime("%H:%M:%S")
         for video in videos:
-            if current_time >= video["time"]:
-                print(current_time + " PLAYING: " + video["file"])
-                play_video(video["file"])
-                for video2 in videos[:]:
-                    if video2["time"] == video["time"]:
-                        videos.remove(video2)
-                update_queue_display()
-                break
+            # if current_time >= video["time"]:
+            print(current_time + " PLAYING: " + video["file"])
+            play_video(video["file"])
+            for video2 in videos[:]:
+                if video2["time"] == video["time"]:
+                    videos.remove(video2)
+            update_queue_display()
+            break
 
 def on_closing():
     cl.remove_scene(name="videos")
