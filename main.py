@@ -16,6 +16,7 @@ licznik = 0
 videos = [] #to do: save queue in file and restore it after restarting program
 now_playing = ""
 paused = False
+queue_paused = False
 
 video_duration = {}
 
@@ -170,7 +171,7 @@ def check_and_play_scheduled_videos():
         if response.media_state != "OBS_MEDIA_STATE_PLAYING":
             ok = True
     
-    if ok or (delete_source == "" and paused == False):
+    if (ok or (delete_source == "" and paused == False)) and queue_paused == False:
         videos = sorted(videos, key=lambda x: x["time"])
         current_time = datetime.now().strftime("%H:%M:%S")
         for video in videos:
@@ -245,6 +246,16 @@ def pause():
             })
         pause_button.config(text="Pause")
 
+def queue_pause():
+    global queue_paused
+    
+    if queue_paused == False:
+        queue_paused = True
+        queue_pause_button.config(text="Queue Resume")
+    else:
+        queue_paused = False
+        queue_pause_button.config(text="Queue Pause")
+
 # GUI
 root = tk.Tk()
 root.title("OBS video queue manager")
@@ -260,6 +271,10 @@ now_playing_label.pack(side="left", padx=10)
 #pause
 pause_button = tk.Button(top, text="Pause", command=pause)
 pause_button.pack(side="left", padx=5)
+
+#queue pause
+queue_pause_button = tk.Button(top, text="Queue Pause", command=queue_pause)
+queue_pause_button.pack(side="left", padx=5)
 
 refresh_button = tk.Button(root, text="Refresh video files", command=load_video_list)
 refresh_button.pack(pady=5)
