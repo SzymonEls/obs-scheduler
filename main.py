@@ -1,10 +1,11 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import obsws_python as obs
 from dotenv import load_dotenv
+from moviepy import VideoFileClip
 load_dotenv(override=True)
 
 # connection
@@ -15,6 +16,8 @@ licznik = 0
 videos = [] #to do: save queue in file and restore it after restarting program
 now_playing = ""
 paused = False
+
+video_duration = {}
 
 
 video_types = ('.mp4', '.avi', '.mov', '.mkv')
@@ -38,14 +41,17 @@ def update_video(time, new_time):
             videos[l]["time"] += 1
             
         l-=1
-    
+    # print(video_duration)
     videos = sorted(videos, key=lambda x: x["time"])
 
+
 def get_video_files(): #to do: photos?
+    global video_duration
     video_files = []
     for filename in os.listdir(current_directory):
         if filename.endswith(video_types):
             video_files.append(filename)
+            video_duration[filename] = VideoFileClip(current_directory + "/" + filename).duration
     return video_files
 
 def play_video(video_file_path):
@@ -143,18 +149,22 @@ def check_and_play_scheduled_videos():
     global videos
     global delete_source
     global now_playing
+    global video_duration
 
     ok = False
+    
 
     if now_playing != "":
+        # print(duration)
         response = cl.get_media_input_status(name=now_playing)
+        # print(dir(response))
         if response.media_state == "OBS_MEDIA_STATE_ENDED": #to do
             now_playing = ""
             now_playing_label.config(text="Now playing: ")
             # print(response.media_state)
     
 
-    time.sleep(0.1)
+    # time.sleep(0.1)
     if delete_source != "" and paused == False:
         response = cl.get_media_input_status(name=delete_source)
         if response.media_state != "OBS_MEDIA_STATE_PLAYING":
@@ -165,7 +175,7 @@ def check_and_play_scheduled_videos():
         current_time = datetime.now().strftime("%H:%M:%S")
         for video in videos:
             # if current_time >= video["time"]:
-            print(current_time + " PLAYING: " + video["file"])
+            print(current_time + " PLAYING: " + video["file"] + " duration " + str(video_duration[video["file"]]) + "s")
             play_video(video["file"])
             for video2 in videos[:]:
                 if video2["time"] == video["time"]:
@@ -177,16 +187,42 @@ def on_closing():
     cl.remove_scene(name="videos")
     root.destroy()
 
-def load_video_list(): #to do: add refreshing button
+def load_video_list():
     video_listbox.delete(0, tk.END)
     video_files = get_video_files()
     for video in video_files:
         video_listbox.insert(tk.END, video)
 
+def update_queue_time():
+    global videos
+    global now_playing
+    time_sum = 0.0
+    if now_playing != "":
+        duration = cl.get_media_input_status(name=now_playing).media_duration
+        if duration is None:
+            duration = 0.0
+        time = cl.get_media_input_status(name=now_playing).media_cursor
+        if time is None:
+            time = 0.0
+        time_sum = (duration - time) / 1000
+    # print((duration - time) / 1000)
+
+
+    
+    videos = sorted(videos, key=lambda x: x["time"])
+    
+    for video in videos:
+        time_sum += video_duration[video["file"]]
+    now = datetime.now()
+    queue_end_time = now + timedelta(seconds=time_sum)
+    queue_ends_in_label.config(text="Queue ends in: " + str(round(time_sum / 60.0, 2)) + " minutes (" + queue_end_time.strftime("%H:%M:%S") + ")")
+    
+
 def run_scheduled_tasks():
     while True:
         check_and_play_scheduled_videos()
-        time.sleep(0.01)
+        update_queue_time()
+        time.sleep(0.1)
 
 def pause():
     global paused
@@ -227,6 +263,10 @@ pause_button.pack(side="left", padx=5)
 
 refresh_button = tk.Button(root, text="Refresh video files", command=load_video_list)
 refresh_button.pack(pady=5)
+
+#queue ends in
+queue_ends_in_label = tk.Label(root, text="Queue ends in: ")
+queue_ends_in_label.pack(pady=5)
 
 # Video list
 video_listbox = tk.Listbox(root, height=5, width=40)
