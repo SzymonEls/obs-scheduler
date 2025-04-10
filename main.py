@@ -6,6 +6,8 @@ import time
 import obsws_python as obs
 from dotenv import load_dotenv
 from moviepy import VideoFileClip
+import socket
+import json
 load_dotenv(override=True)
 
 # connection
@@ -256,6 +258,27 @@ def queue_pause():
         queue_paused = False
         queue_pause_button.config(text="Queue Pause")
 
+def tcp_server():
+    global now_playing
+    host = os.getenv("TCP_HOST")
+    port = int(os.getenv("TCP_PORT"))
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((host, port))
+    server_socket.listen()
+
+    print(f"[TCP SERVER] Listening on {host}:{port}")
+
+    while True:
+        client_socket, addr = server_socket.accept()
+        print(f"[TCP SERVER] Connected by {addr}")
+        try:
+            client_socket.sendall(json.dumps(videos).encode('utf-8'))
+        except Exception as e:
+            print(f"[TCP SERVER] Error sending data: {e}")
+        finally:
+            client_socket.close()
+
 # GUI
 root = tk.Tk()
 root.title("OBS video queue manager")
@@ -318,5 +341,8 @@ update_queue_display()
 # Running tasks in the background
 import threading
 threading.Thread(target=run_scheduled_tasks, daemon=True).start()
+
+server_thread = threading.Thread(target=tcp_server, daemon=True)
+server_thread.start()
 
 root.mainloop()
