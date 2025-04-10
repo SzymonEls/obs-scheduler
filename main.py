@@ -27,11 +27,19 @@ except Exception as e:
 
 def update_video(time, new_time):
     global videos
-    l = 0
-    while l < len(videos):
+    videos = sorted(videos, key=lambda x: x["time"])
+    l = len(videos) - 1
+    while l >= 0:
         if videos[l]["time"] == time:
+            # print("a", videos[l])
             videos[l]["time"] = new_time
-        l+=1
+        elif videos[l]["time"] >= new_time:
+            # print("b", videos[l])
+            videos[l]["time"] += 1
+            
+        l-=1
+    
+    videos = sorted(videos, key=lambda x: x["time"])
 
 def get_video_files(): #to do: photos?
     video_files = []
@@ -95,6 +103,7 @@ def add_to_queue():
 
     if selected_video and time_to_play:
         if validate_time_format(time_to_play):
+            time_to_play = int(time_to_play)
             videos.append({"file": selected_video, "time": time_to_play})
             
             update_queue_display()
@@ -105,12 +114,15 @@ def add_to_queue():
         messagebox.showwarning("Error", "Please select a video from the list and enter the time.")
 
 def edit_time():
+    
     selected_item = treeview.selection()
     if selected_item:
         #selected_video = treeview.item(selected_item, "values")[0]
         new_time = edit_time_entry.get()
+        
         if new_time and validate_time_format(new_time):
-            update_video(treeview.item(selected_item, "values")[1], new_time)
+            new_time = int(new_time)
+            update_video(int(treeview.item(selected_item, "values")[1]), new_time)
             update_queue_display()
             edit_time_entry.delete(0, tk.END)
         else:
