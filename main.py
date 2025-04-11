@@ -305,54 +305,61 @@ root.title("OBS video queue manager")
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
 top = tk.Frame(root)
-top.pack(pady=10)
+top.grid(pady=10, column=0)
 
 #now playing
-now_playing_label = tk.Label(top, text="Now playing: ")
-now_playing_label.pack(side="left", padx=10)
+now_playing_label = tk.Label(top, text="Now playing: ", font=("Arial", 12))
+now_playing_label.grid(padx=10, column=0, row=0)
 
-#pause
-pause_button = tk.Button(top, text="Pause", command=pause)
-pause_button.pack(side="left", padx=5)
 
-#queue pause
-queue_pause_button = tk.Button(top, text="Queue Pause", command=queue_pause)
-queue_pause_button.pack(side="left", padx=5)
 
-refresh_button = tk.Button(root, text="Refresh video files", command=load_video_list)
-refresh_button.pack(pady=5)
 
 #queue ends in
-queue_ends_in_label = tk.Label(root, text="Queue ends in: ")
-queue_ends_in_label.pack(pady=5)
+queue_ends_in_label = tk.Label(top, text="Queue ends in: ", font=("Arial", 14))
+queue_ends_in_label.grid(pady=5, column=0, row=1)
+
+#pause
+pause_button = tk.Button(root, text="Pause", command=pause)
+pause_button.grid(padx=5, column=0, row=1)
+
+#queue pause
+queue_pause_button = tk.Button(root, text="Queue Pause", command=queue_pause)
+queue_pause_button.grid(padx=5, column=0, row=2)
+
+
+
 
 # Video list
-video_listbox = tk.Listbox(root, height=5, width=40)
-video_listbox.pack(pady=5)
+video_listbox = tk.Listbox(root, height=20, width=40)
+video_listbox.grid(pady=5, padx=20, column=1, row=0)
+
+#refresh button
+refresh_button = tk.Button(root, text="Refresh video files", command=load_video_list)
+refresh_button.grid(pady=5, column=1, row=1)
 
 # Time input
 time_entry = tk.Entry(root, width=10)
-time_entry.pack(pady=5)
+time_entry.grid(pady=5, column=1, row=3)
 
 # Button for adding videos to queue
 add_button = tk.Button(root, text="Add to queue", command=add_to_queue)
-add_button.pack(pady=5)
+add_button.grid(pady=5, column=1, row=4)
 
 # Queue table
-treeview = ttk.Treeview(root, columns=("Video", "Time"), show="headings")
+treeview = ttk.Treeview(root, height=20, columns=("Video", "Time"), show="headings")
 treeview.heading("Video", text="Video")
 treeview.heading("Time", text="Time")
-treeview.pack(pady=10)
+treeview.grid(pady=10, column=2, row=0)
 
 # Edit time input
 edit_time_label = tk.Label(root, text="New time:")
-edit_time_label.pack(pady=5)
+edit_time_label.grid(pady=5, column=2, row=1)
 
 edit_time_entry = tk.Entry(root, width=10)
-edit_time_entry.pack(pady=5)
+edit_time_entry.grid(pady=5, column=2, row=2)
 
 edit_time_button = tk.Button(root, text="Edit time", command=edit_time)
-edit_time_button.pack(pady=5)
+edit_time_button.grid(pady=5, column=2, row=3)
 
 # Load videos
 load_video_list()
