@@ -179,6 +179,9 @@ def check_and_play_scheduled_videos():
         for video in videos:
             # if current_time >= video["time"]:
             print(current_time + " PLAYING: " + video["file"] + " duration " + str(video_duration[video["file"]]) + "s")
+            path = current_directory + "\\" + "logs.txt"
+            with open(path, "a") as f:
+                f.write(current_time + " PLAYING: " + video["file"] + " duration " + str(video_duration[video["file"]]) + "s" + "\n")
             play_video(video["file"])
             for video2 in videos[:]:
                 if video2["time"] == video["time"]:
