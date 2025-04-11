@@ -24,7 +24,11 @@ video_duration = {}
 
 
 video_types = ('.mp4', '.avi', '.mov', '.mkv')
-current_directory = os.path.dirname(os.path.abspath(__file__))
+
+if os.getenv("DIRECTORY") == "":
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+else:
+    current_directory = os.getenv("DIRECTORY")
 delete_source = ""
 try:
     cl.create_scene(name="videos") #to do
