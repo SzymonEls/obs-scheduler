@@ -87,7 +87,7 @@ def play_video(video_file_path):
         sceneItemEnabled=True,
     )
 
-    # time.sleep(3)
+    time.sleep(0.1)
     # cl.pause_media_input(input_name=source_name)
     # cl.send(obs.requests.PauseMediaInput(inputName=source_name))
     
@@ -140,6 +140,24 @@ def edit_time():
             edit_time_entry.delete(0, tk.END)
         else:
             messagebox.showwarning("Error", "Please enter number.")
+    else:
+        messagebox.showwarning("Error", "Please select a video from the list and enter the time.")
+
+def delete():
+    global videos
+    selected_item = treeview.selection()
+    if selected_item:
+        #selected_video = treeview.item(selected_item, "values")[0]
+        old_time = int(treeview.item(selected_item, "values")[1])
+        l = len(videos) - 1
+        while l >= 0:
+            if videos[l]["time"] == old_time:
+                # print("a", videos[l])
+                del videos[l]
+                break
+            l-=1
+        update_queue_display()
+        edit_time_entry.delete(0, tk.END)
     else:
         messagebox.showwarning("Error", "Please select a video from the list and enter the time.")
 
@@ -367,6 +385,9 @@ edit_time_entry.grid(pady=5, column=2, row=2)
 
 edit_time_button = tk.Button(root, text="Edit time", command=edit_time)
 edit_time_button.grid(pady=5, column=2, row=3)
+
+edit_time_button = tk.Button(root, text="Delete", command=delete)
+edit_time_button.grid(pady=5, column=2, row=4)
 
 # Load videos
 load_video_list()
