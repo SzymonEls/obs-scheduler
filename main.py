@@ -259,7 +259,7 @@ def queue_pause():
         queue_pause_button.config(text="Queue Pause")
 
 def tcp_server():
-    global now_playing
+    # global now_playing
     host = os.getenv("TCP_HOST")
     port = int(os.getenv("TCP_PORT"))
 
@@ -272,12 +272,32 @@ def tcp_server():
     while True:
         client_socket, addr = server_socket.accept()
         print(f"[TCP SERVER] Connected by {addr}")
-        try:
-            client_socket.sendall(json.dumps(videos).encode('utf-8'))
-        except Exception as e:
-            print(f"[TCP SERVER] Error sending data: {e}")
-        finally:
-            client_socket.close()
+        with client_socket:
+            while True:
+                try:
+                    data = client_socket.recv(1024).decode('utf-8').strip()
+                    if not data:
+                        break
+
+                    print(f"[Server] Disconnected: {data}")
+
+                    if data == "GET_VIDEOS":
+                        response = json.dumps(videos)
+                    elif data == "GET_NOW_PLAYING":
+                        response = now_playing or "(none)"
+                    elif data == "PAUSE_QUEUE":
+                        queue_pause()
+                        response = "Queue paused/resumed"
+                    elif data == "PING":
+                        response = "PONG"
+                    else:
+                        response = "ERROR: Unknown command"
+
+                    client_socket.sendall(response.encode('utf-8'))
+
+                except ConnectionResetError:
+                    print(f"[Server] Disconnected {addr}")
+                    break
 
 # GUI
 root = tk.Tk()
